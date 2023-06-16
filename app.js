@@ -1,55 +1,45 @@
 let timer = {
-    time: 25 * 60, // Starting with 25 minutes in seconds
-    running: false,
-    interval: null,
+    time: 25 * 60, // initial time in seconds
+    running: false, // flag indicating if the timer is running
 
     start: function() {
         if (!this.running) {
             this.running = true;
-            this.interval = setInterval(() => {
-                this.time--;
-                if (this.time <= 0) this.stop();
-                updateDisplay();
-            }, 1000);
+            this.tick();
         }
     },
 
     pause: function() {
-        if (this.running) {
-            clearInterval(this.interval);
-            this.running = false;
-        }
+        this.running = false;
     },
 
     reset: function() {
-        this.time = 25 * 60;
-        this.pause();
-        updateDisplay();
+        this.time = 25 * 60; // reset time to initial value
+        this.running = false;
+        this.updateDisplay();
     },
 
-    stop: function() {
-        this.reset();
-        // Notify user here
+    tick: function() {
+        if (this.running) {
+            this.time--;
+            if (this.time >= 0) {
+                this.updateDisplay();
+                setTimeout(this.tick.bind(this), 1000); // schedule the next tick
+            } else {
+                this.running = false; // stop the timer when it reaches 0
+            }
+        }
+    },
+
+    updateDisplay: function() {
+        let minutes = Math.floor(this.time / 60);
+        let seconds = this.time % 60;
+        // assume that there is an HTML element with id "timer"
+        document.getElementById('timer').innerText = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
     }
 };
 
-function updateDisplay() {
-    let minutes = Math.floor(timer.time / 60);
-    let seconds = timer.time % 60;
-    document.getElementById('time-display').textContent = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
-}
-
-document.getElementById('task-form').addEventListener('submit', function(event) {
-    event.preventDefault(); // Prevent form from submitting normally
-
-    let taskInput = document.getElementById('task-input');
-    let newTask = document.createElement('li');
-    newTask.textContent = taskInput.value;
-    document.getElementById('task-list').appendChild(newTask);
-
-    taskInput.value = ''; // Clear input field
-});
-
+// assume that there are HTML elements with ids "start", "pause", and "reset"
 document.getElementById('start').addEventListener('click', function() {
     timer.start();
 });
@@ -61,25 +51,3 @@ document.getElementById('pause').addEventListener('click', function() {
 document.getElementById('reset').addEventListener('click', function() {
     timer.reset();
 });
-
-function notifyUser(message) {
-    if (!("Notification" in window)) {
-        alert("This browser does not support system notifications");
-    }
-    else if (Notification.permission === "granted") {
-        new Notification(message);
-    }
-    else if (Notification.permission !== 'denied') {
-        Notification.requestPermission(function (permission) {
-            if (permission === "granted") {
-                new Notification(message);
-            }
-        });
-    }
-}
-
-// Call this function in the timer's stop method
-timer.stop = function() {
-    this.reset();
-    notifyUser("Pomodoro session ended!");
-};
